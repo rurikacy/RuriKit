@@ -18,6 +18,24 @@
 
 项目由个人在日常维护的游戏项目中得来，设计目标是在保持低侵入、易上手的同时，让业务代码远离重复的基础设施工作。框架采用「服务定位器」架构（通过 `XxxManager.Instance` 获取服务），不强制约束业务代码的组织方式——可以整体接入，也可以只引用其中个别模块。
 
+### 📥 安装
+
+推荐通过 Unity Package Manager 以 git URL 方式安装：
+
+1. 打开 `Window → Package Manager`，点击左上角 `+`，选择 `Add package from git URL...`；
+2. 粘贴以下地址并确认：
+
+```
+https://github.com/rurikacy/RuriKit.git
+```
+
+安装完成后，RuriKit 会以 UPM 包形式出现在 **Packages** 区：
+
+- **包名**：`com.rurikacy.rurikit`
+- **源码路径**：`Library/PackageCache/com.rurikacy.rurikit@<提交哈希>`（Unity 逻辑路径为 `Packages/com.rurikacy.rurikit`）
+
+在 Unity 的 Project 窗口把视图从 `Assets` 切换到 `Packages`，即可浏览全部源码。该区域只读；如需修改源码，请直接 clone 本仓库。依赖 `com.unity.nuget.newtonsoft-json` 会自动安装。
+
 ---
 
 ## ✨ 功能特性
