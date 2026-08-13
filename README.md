@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Documents/rurikacy.ico" alt="UniHacker" width="96" height="96" />
+  <img src="Documents/Icon.ico" alt="UniHacker" width="96" height="96" />
   <h1 align="center">RuriKit — 轻量级 Unity 游戏服务框架</h1>
   <p align="center">
     <img alt="Unity" src="https://img.shields.io/badge/Unity-2021.3+-000000" />
