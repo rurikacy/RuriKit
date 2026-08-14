@@ -4,6 +4,8 @@
   "displayName": "RuriKit",
   "unity": "2021.3",
   "dependencies": {
-    "com.unity.nuget.newtonsoft-json": "3.2.2"
+    "com.unity.nuget.newtonsoft-json": "3.2.2",
+    "com.unity.textmeshpro": "3.0.6",
+    "com.unity.ugui": "1.0.0"
   }
 }
