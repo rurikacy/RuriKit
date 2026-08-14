@@ -22,13 +22,13 @@
 
 ## 📥 安装
 
-推荐通过 Unity Package Manager 以 git URL 方式安装：
+可以将 `RuriKit` 目录复制到项目的 `Assets` 下，或通过 Unity Package Manager 以 git URL 方式安装：
 
 1. 打开 `Window → Package Manager`，点击左上角 `+`，选择 `Add package from git URL...`；
 2. 粘贴以下地址并确认：
 
 ```
-https://github.com/rurikacy/RuriKit.git
+https://github.com/rurikacy/RuriKit.git#main
 ```
 
 安装完成后，RuriKit 会以 UPM 包形式出现在 **Packages** 区：
@@ -65,7 +65,7 @@ https://github.com/rurikacy/RuriKit.git
 ## 🚀 快速开始
 
 1. 将 `RuriKit` 目录复制到项目的 `Assets` 下（或作为 UPM 包引用）；
-2. 依赖包：`com.unity.nuget.newtonsoft-json`（3.2.2）；
+2. 依赖包：`com.unity.nuget.newtonsoft-json`（3.2.2）、`com.unity.textmeshpro`（3.0.6）、`com.unity.ugui`（1.0.0）；
 3. 运行时管理器自动创建，通过静态入口直接使用：
 
 ```csharp
