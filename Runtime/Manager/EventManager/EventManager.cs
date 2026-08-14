@@ -18,7 +18,7 @@ namespace RuriKit
         }
 
         /// <summary>
-        ///     触发指定事件类型下注册的所有监听器。
+        ///     触发指定事件类型下注册的所有监听器；单个监听器抛出的异常会被记录，且不影响其他监听器。
         /// </summary>
         /// <typeparam name="T">事件类型。</typeparam>
         /// <param name="eventData">要传递给监听器的事件数据。</param>
@@ -26,7 +26,17 @@ namespace RuriKit
         {
             if (_listeners.TryGetValue(typeof(T), out Delegate listeners))
             {
-                ((Action<T>)listeners)(eventData);
+                foreach (Delegate listener in listeners.GetInvocationList())
+                {
+                    try
+                    {
+                        ((Action<T>)listener)(eventData);
+                    }
+                    catch (Exception exception)
+                    {
+                        RLog.LogException(exception);
+                    }
+                }
             }
         }
 
