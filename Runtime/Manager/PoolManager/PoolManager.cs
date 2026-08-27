@@ -37,7 +37,7 @@ namespace RuriKit
         {
             if (!prefab)
             {
-                RLog.LogWarning("Preload 失败：prefab 为 null。");
+                Debug.LogWarning("Preload 失败：prefab 为 null。");
                 return;
             }
             if (count <= 0) return;
@@ -64,7 +64,7 @@ namespace RuriKit
         {
             if (!prefab)
             {
-                RLog.LogWarning("Get 失败：prefab 为 null。");
+                Debug.LogWarning("Get 失败：prefab 为 null。");
                 return null;
             }
 
@@ -84,7 +84,7 @@ namespace RuriKit
         {
             if (!prefab)
             {
-                RLog.LogWarning("Get 失败：prefab 为 null。");
+                Debug.LogWarning("Get 失败：prefab 为 null。");
                 return null;
             }
 
@@ -109,7 +109,7 @@ namespace RuriKit
             int instanceId = instance.GetInstanceID();
             if (!_instanceToPrefab.TryGetValue(instanceId, out int prefabId))
             {
-                RLog.LogWarning($"Release 失败：实例 '{instance.name}' 不属于任何对象池，直接销毁。");
+                Debug.LogWarning($"Release 失败：实例 '{instance.name}' 不属于任何对象池，直接销毁。");
                 CancelDelayedRelease(instanceId);
                 _goInstances.Remove(instanceId);
                 _goBorrowedInstances.Remove(instanceId);
@@ -121,13 +121,13 @@ namespace RuriKit
 
             if (!_goBorrowedInstances.Remove(instanceId))
             {
-                RLog.LogWarning($"Release 失败：实例 '{instance.name}' 已归还到对象池，忽略重复归还。");
+                Debug.LogWarning($"Release 失败：实例 '{instance.name}' 已归还到对象池，忽略重复归还。");
                 return;
             }
 
             if (!_goPools.TryGetValue(prefabId, out ObjectPool<GameObject> pool))
             {
-                RLog.LogWarning($"Release 失败：实例 '{instance.name}' 对应的对象池已不存在，直接销毁。");
+                Debug.LogWarning($"Release 失败：实例 '{instance.name}' 对应的对象池已不存在，直接销毁。");
                 DestroyManagedInstance(instanceId, instance);
                 return;
             }
@@ -152,7 +152,7 @@ namespace RuriKit
             int instanceId = instance.GetInstanceID();
             if (!_instanceToPrefab.ContainsKey(instanceId))
             {
-                RLog.LogWarning($"Release 失败：实例 '{instance.name}' 不属于任何对象池，直接销毁。");
+                Debug.LogWarning($"Release 失败：实例 '{instance.name}' 不属于任何对象池，直接销毁。");
                 CancelDelayedRelease(instanceId);
                 _goInstances.Remove(instanceId);
                 _goBorrowedInstances.Remove(instanceId);
@@ -162,7 +162,7 @@ namespace RuriKit
 
             if (!_goBorrowedInstances.Contains(instanceId))
             {
-                RLog.LogWarning($"Release 失败：实例 '{instance.name}' 已归还到对象池，忽略重复延迟归还。");
+                Debug.LogWarning($"Release 失败：实例 '{instance.name}' 已归还到对象池，忽略重复延迟归还。");
                 return;
             }
 
@@ -272,7 +272,7 @@ namespace RuriKit
 
             if (csPool is CSPool<T> typedPool && !typedPool.Release(obj))
             {
-                RLog.LogWarning($"Release<{typeof(T).Name}> 失败：对象不属于当前借出集合，忽略归还。");
+                Debug.LogWarning($"Release<{typeof(T).Name}> 失败：对象不属于当前借出集合，忽略归还。");
             }
         }
 

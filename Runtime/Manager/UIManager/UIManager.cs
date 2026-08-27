@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace RuriKit
 {
@@ -38,7 +39,7 @@ namespace RuriKit
         {
             if (!TryGetView(out T view))
             {
-                RLog.LogWarning($"ShowView 失败：未注册 {typeof(T).Name}。");
+                Debug.LogWarning($"ShowView 失败：未注册 {typeof(T).Name}。");
                 return null;
             }
 
@@ -58,7 +59,7 @@ namespace RuriKit
         {
             if (!TryGetView(out T view))
             {
-                RLog.LogWarning($"ShowViewOnly 失败：未注册 {typeof(T).Name}。");
+                Debug.LogWarning($"ShowViewOnly 失败：未注册 {typeof(T).Name}。");
                 return null;
             }
 
@@ -77,14 +78,14 @@ namespace RuriKit
         {
             if (!CanControlView(view))
             {
-                RLog.LogWarning("ShowViewOnly 失败：传入视图未注册。", view);
+                Debug.LogWarning("ShowViewOnly 失败：传入视图未注册。", view);
                 return null;
             }
 
             UICanvas canvas = view.GetComponentInParent<UICanvas>(true);
             if (!canvas || !_canvasViews.TryGetValue(canvas, out List<UIView> views) || !views.Contains(view))
             {
-                RLog.LogWarning($"ShowViewOnly 失败：{view.GetType().Name} 所属画布未注册或需要刷新。", view);
+                Debug.LogWarning($"ShowViewOnly 失败：{view.GetType().Name} 所属画布未注册或需要刷新。", view);
                 return null;
             }
 
@@ -109,7 +110,7 @@ namespace RuriKit
         {
             if (!TryGetView(out T view))
             {
-                RLog.LogWarning($"HideView 失败：未注册 {typeof(T).Name}。");
+                Debug.LogWarning($"HideView 失败：未注册 {typeof(T).Name}。");
                 return;
             }
 
@@ -152,7 +153,7 @@ namespace RuriKit
 
                 if (canvas)
                 {
-                    RLog.LogWarning($"TryGetCanvas 失败：存在多个匹配 {typeof(T).Name} 的已注册画布。");
+                    Debug.LogWarning($"TryGetCanvas 失败：存在多个匹配 {typeof(T).Name} 的已注册画布。");
                     canvas = null;
                     return false;
                 }
@@ -190,7 +191,7 @@ namespace RuriKit
 
                 if (view.gameObject == canvas.gameObject)
                 {
-                    RLog.LogError("注册失败：UIView 不能与 UICanvas 位于同一游戏对象。", view);
+                    Debug.LogError("注册失败：UIView 不能与 UICanvas 位于同一游戏对象。", view);
                     continue;
                 }
 
@@ -199,7 +200,7 @@ namespace RuriKit
                 {
                     if (registeredView)
                     {
-                        RLog.LogError($"注册 {viewType.Name} 失败：同类型 UIView 已存在。", view);
+                        Debug.LogError($"注册 {viewType.Name} 失败：同类型 UIView 已存在。", view);
                         continue;
                     }
 

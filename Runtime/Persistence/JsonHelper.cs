@@ -163,7 +163,7 @@ namespace RuriKit
                 }
                 catch (Exception exception)
                 {
-                    RLog.LogError($"Json 数据删除失败，原因如下：{exception.Message}");
+                    Debug.LogError($"Json 数据删除失败，原因如下：{exception.Message}");
                 }
             }
         }
@@ -195,7 +195,7 @@ namespace RuriKit
                 }
                 catch (Exception exception)
                 {
-                    RLog.LogError($"Json 数据清空失败，原因如下：{exception.Message}");
+                    Debug.LogError($"Json 数据清空失败，原因如下：{exception.Message}");
                 }
             }
         }

@@ -188,7 +188,7 @@ namespace RuriKit
         {
             if (!target)
             {
-                RLog.LogWarning("Play3D target 为 null，回退到 2D 播放。");
+                Debug.LogWarning("Play3D target 为 null，回退到 2D 播放。");
                 return Play(clip, loop, volume);
             }
 
@@ -207,7 +207,7 @@ namespace RuriKit
         {
             if (!clip)
             {
-                RLog.LogWarning("AudioClip 为空。");
+                Debug.LogWarning("AudioClip 为空。");
                 return null;
             }
 
@@ -400,7 +400,7 @@ namespace RuriKit
         {
             if (!clip)
             {
-                RLog.LogWarning("AudioClip 为空。");
+                Debug.LogWarning("AudioClip 为空。");
                 return null;
             }
 
@@ -534,7 +534,7 @@ namespace RuriKit
             }
             catch (Exception exception)
             {
-                RLog.LogException(exception, this);
+                Debug.LogException(exception, this);
             }
 
             try
@@ -543,7 +543,7 @@ namespace RuriKit
             }
             catch (Exception exception)
             {
-                RLog.LogException(exception, this);
+                Debug.LogException(exception, this);
             }
             finally
             {

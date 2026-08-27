@@ -29,7 +29,7 @@ namespace RuriKit
 
                 if (!_instance && ManagerSingletonRuntime.IsApplicationQuitting)
                 {
-                    RLog.LogWarning($"应用程序正在退出时，调用了 {typeof(T).Name} 单例实例。");
+                    Debug.LogWarning($"应用程序正在退出时，调用了 {typeof(T).Name} 单例实例。");
                     return null;
                 }
 

@@ -34,7 +34,7 @@ namespace RuriKit
                     }
                     catch (Exception exception)
                     {
-                        RLog.LogException(exception);
+                        Debug.LogException(exception);
                     }
                 }
             }
