@@ -22,14 +22,8 @@
 
 ## 📥 安装
 
-- 通过下载源码后将目录复制到项目的 `Assets` 下引用，也可以通过 Unity Package Manager 以 git URL 方式安装：
-
-1. 打开 `Window → Package Manager`，点击左上角 `+`，选择 `Add package from git URL...`；
-2. 粘贴以下地址并确认：
-
-```
-https://github.com/rurikacy/RuriKit.git#main
-```
+1. 前往 [Releases](https://github.com/rurikacy/RuriKit/releases/latest) 页面，下载最新版本的 `.unitypackage` 文件。
+2. 在 Unity 中双击下载的文件，或选择 `Assets → Import Package → Custom Package...`，选中该文件并完成导入。
 
 ---
 

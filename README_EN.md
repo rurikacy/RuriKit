@@ -22,14 +22,8 @@ The project grew out of a personal game codebase. Its goal is to keep integratio
 
 ## 📥 Installation
 
-- Copy the source directory into your project's `Assets` folder, or install it through Unity Package Manager using a git URL:
-
-1. Open `Window → Package Manager`, click `+`, and select `Add package from git URL...`.
-2. Paste the following URL and confirm:
-
-```
-https://github.com/rurikacy/RuriKit.git#main
-```
+1. Go to the [Releases](https://github.com/rurikacy/RuriKit/releases/latest) page and download the latest `.unitypackage` file.
+2. In Unity, double-click the downloaded file, or select `Assets → Import Package → Custom Package...`, choose the file, and complete the import.
 
 ---
 
