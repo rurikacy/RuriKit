@@ -31,6 +31,7 @@ namespace RuriKit
         private readonly List<AudioHandle> _activeHandles = new(32);
         private readonly List<AudioHandle> _pendingHandles = new(8);
         private readonly Stack<AudioSource> _sourcePool = new(POOL_CAPACITY);
+        private readonly Dictionary<AudioSource, AudioGainFilter> _gainFilters = new(POOL_CAPACITY * 2);
         private AudioMixerGroup _bgmGroup;
         private float _bgmVolume = 1f;
         private int _handleIterationDepth;
@@ -156,7 +157,7 @@ namespace RuriKit
         /// </summary>
         /// <param name="clip">要播放的音频片段。如果为 <c>null</c>，则不播放并返回 <c>null</c>。</param>
         /// <param name="loop">是否循环播放。</param>
-        /// <param name="volume">本次播放的音量倍率，只作用于当前 AudioSource。全局主音量和音效音量由 AudioMixer 控制；负数和 <see cref="float.NaN" /> 按 0 处理。</param>
+        /// <param name="volume">本次播放的音量线性增益倍率，支持大于 1 的值。负数、<see cref="float.NaN" /> 按 0 处理。</param>
         /// <returns>用于查询和请求控制本次播放的句柄；播放失败时返回 <c>null</c>。</returns>
         public AudioHandle Play(AudioClip clip, bool loop = false, float volume = 1f)
         {
@@ -169,7 +170,7 @@ namespace RuriKit
         /// <param name="clip">要播放的音频片段。如果为 <c>null</c>，则不播放并返回 <c>null</c>。</param>
         /// <param name="position">音频源的世界坐标。</param>
         /// <param name="loop">是否循环播放。</param>
-        /// <param name="volume">本次播放的音量倍率，只作用于当前 AudioSource。全局主音量和音效音量由 AudioMixer 控制；负数和 <see cref="float.NaN" /> 按 0 处理。</param>
+        /// <param name="volume">本次播放的音量线性增益倍率，支持大于 1 的值。负数、<see cref="float.NaN" /> 按 0 处理。</param>
         /// <returns>用于查询和请求控制本次播放的句柄；播放失败时返回 <c>null</c>。</returns>
         public AudioHandle Play3D(AudioClip clip, Vector3 position, bool loop = false, float volume = 1f)
         {
@@ -182,7 +183,7 @@ namespace RuriKit
         /// <param name="clip">要播放的音频片段。如果为 <c>null</c>，则不播放并返回 <c>null</c>。</param>
         /// <param name="target">音频源要跟随的目标。为 <c>null</c> 时回退到二维播放。</param>
         /// <param name="loop">是否循环播放。</param>
-        /// <param name="volume">本次播放的音量倍率，只作用于当前 AudioSource。全局主音量和音效音量由 AudioMixer 控制；负数和 <see cref="float.NaN" /> 按 0 处理。</param>
+        /// <param name="volume">本次播放的音量线性增益倍率，支持大于 1 的值。负数、<see cref="float.NaN" /> 按 0 处理。</param>
         /// <returns>用于查询和请求控制本次播放的句柄；播放失败时返回 <c>null</c>。</returns>
         public AudioHandle Play3D(AudioClip clip, Transform target, bool loop = false, float volume = 1f)
         {
@@ -201,7 +202,7 @@ namespace RuriKit
         /// <param name="clip">要播放的音频片段。如果为 <c>null</c>，则保留当前背景音乐并返回 <c>null</c>。</param>
         /// <param name="loop">是否循环播放。</param>
         /// <param name="fadeInDuration">新背景音乐的淡入时长，单位为秒；同时用作旧背景音乐的淡出时长。负数按 0 处理。</param>
-        /// <param name="volume">本次播放的音量倍率，只作用于当前 AudioSource。全局主音量和背景音乐音量由 AudioMixer 控制；负数和 <see cref="float.NaN" /> 按 0 处理。</param>
+        /// <param name="volume">本次播放的音量线性增益倍率，支持大于 1 的值。负数、<see cref="float.NaN" /> 按 0 处理。</param>
         /// <returns>用于查询和请求控制新背景音乐的句柄；播放失败时返回 <c>null</c>。</returns>
         public AudioHandle PlayBgm(AudioClip clip, bool loop = true, float fadeInDuration = 0f, float volume = 1f)
         {
@@ -464,6 +465,18 @@ namespace RuriKit
                 source = go.AddComponent<AudioSource>();
             }
 
+            if (!_gainFilters.TryGetValue(source, out AudioGainFilter gainFilter) || !gainFilter)
+            {
+                gainFilter = source.GetComponent<AudioGainFilter>();
+                if (!gainFilter)
+                {
+                    gainFilter = source.gameObject.AddComponent<AudioGainFilter>();
+                }
+
+                _gainFilters[source] = gainFilter;
+            }
+
+            gainFilter.Gain = 1f;
             source.volume = 1f;
             source.loop = false;
             source.time = 0f;
@@ -480,6 +493,10 @@ namespace RuriKit
             source.clip = null;
             source.loop = false;
             source.volume = 1f;
+            if (_gainFilters.TryGetValue(source, out AudioGainFilter gainFilter) && gainFilter)
+            {
+                gainFilter.Gain = 1f;
+            }
             source.time = 0f;
             source.spatialBlend = 0f;
             source.playOnAwake = false;
@@ -503,6 +520,7 @@ namespace RuriKit
             }
             else
             {
+                _gainFilters.Remove(source);
                 Destroy(source.gameObject);
             }
         }
@@ -628,8 +646,24 @@ namespace RuriKit
         {
             if (!CanControl(handle)) return;
 
-            float masterScale = _muted ? 0f : _masterVolume;
-            handle._source.volume = _mixer ? handle.Volume : handle.Volume * masterScale * (handle._isBgm ? _bgmVolume : _sfxVolume);
+            float gain = handle.Volume;
+
+            if (!_mixer)
+            {
+                float masterScale = _muted ? 0f : _masterVolume;
+                gain *= masterScale * (handle._isBgm ? _bgmVolume : _sfxVolume);
+            }
+
+            handle._source.volume = 1f;
+
+            if (_gainFilters.TryGetValue(handle._source, out AudioGainFilter gainFilter) && gainFilter)
+            {
+                gainFilter.Gain = gain;
+            }
+            else
+            {
+                handle._source.volume = Mathf.Clamp01(gain);
+            }
         }
 
         private void RefreshAllSourceVolumes()
@@ -798,12 +832,13 @@ namespace RuriKit
             _activeHandles.Clear();
             _pendingHandles.Clear();
             _sourcePool.Clear();
+            _gainFilters.Clear();
             CurrentBgm = null;
         }
 
         private static float NormalizeVolumeGain(float volume)
         {
-            return float.IsNaN(volume) ? 0f : Mathf.Max(0f, volume);
+            return float.IsNaN(volume) || float.IsInfinity(volume) ? 0f : Mathf.Max(0f, volume);
         }
     }
 }

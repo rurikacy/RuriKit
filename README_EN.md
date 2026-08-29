@@ -50,18 +50,25 @@ The project grew out of a personal game codebase. Its goal is to keep integratio
 
 ## 📚 API Reference
 
-The following tables cover every public method in the Runtime public classes. Inspect properties and events through IntelliSense.
+The following tables cover every public member declared by Runtime public classes (methods, properties, and events).
 
 ### ManagerSingleton&lt;T&gt;
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
+| `static T Instance { get; }` | None | `T` | Gets the current instance, creating a persistent one if needed. |
+| `static bool HasInstance { get; }` | None | `bool` | Checks whether a usable instance already exists without creating one. |
 | `static bool TryGetInstance(out T manager)` | `manager`: output instance | `bool` | Tries to get the current instance without creating one. |
 
 ### AudioManager
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
+| `float MasterVolume { get; set; }` | None | `float` | Gets or sets master volume from 0 to 1. |
+| `bool Muted { get; set; }` | None | `bool` | Gets or sets mute state. |
+| `float BgmVolume { get; set; }` | None | `float` | Gets or sets BGM volume from 0 to 1. |
+| `float SfxVolume { get; set; }` | None | `float` | Gets or sets SFX volume from 0 to 1. |
+| `AudioHandle CurrentBgm { get; private set; }` | None | `AudioHandle` | Gets the current BGM handle, or `null` when none is playing. |
 | `AudioHandle Play(AudioClip clip, bool loop = false, float volume = 1f)` | Clip, loop flag, volume gain | `AudioHandle` | Plays a 2D sound effect. |
 | `AudioHandle Play3D(AudioClip clip, Vector3 position, bool loop = false, float volume = 1f)` | Clip, world position, loop flag, volume gain | `AudioHandle` | Plays a 3D sound at a position. |
 | `AudioHandle Play3D(AudioClip clip, Transform target, bool loop = false, float volume = 1f)` | Clip, follow target, loop flag, volume gain | `AudioHandle` | Plays a 3D sound that follows a target. |
@@ -72,8 +79,18 @@ The following tables cover every public method in the Runtime public classes. In
 
 ### AudioHandle
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
+| `float Volume { get; internal set; }` | None | `float` | Gets this playback's volume gain; external code can only read it. |
+| `bool Loop { get; internal set; }` | None | `bool` | Gets whether this playback loops; external code can only read it. |
+| `float Time { get; }` | None | `float` | Gets the playback position in seconds; 0 when invalid. |
+| `float Duration { get; }` | None | `float` | Gets clip duration in seconds; 0 when invalid. |
+| `bool IsPlaying { get; }` | None | `bool` | Gets whether playback is active. |
+| `bool IsPaused { get; internal set; }` | None | `bool` | Gets whether playback is paused; external code can only read it. |
+| `bool IsStopped { get; }` | None | `bool` | Gets whether playback has stopped. |
+| `bool IsCompleted { get; }` | None | `bool` | Gets whether playback finished naturally. |
+| `event Action<AudioHandle> Completed` | Callback receives this handle | None | Raised when playback finishes naturally. |
+| `event Action<AudioHandle> Stopped` | Callback receives this handle | None | Raised when playback stops, including natural completion. |
 | `void SetVolume(float volume)` | Target volume gain | `void` | Sets this playback's volume immediately. |
 | `void FadeTo(float targetVolume, float duration)` | Target gain, transition seconds | `void` | Smoothly changes this playback's volume. |
 | `void Pause()` | None | `void` | Pauses this playback. |
@@ -84,7 +101,7 @@ The following tables cover every public method in the Runtime public classes. In
 
 ### EventManager
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
 | `static void FireEvent<T>(T eventData)` | Event data | `void` | Invokes all listeners registered for `T`. |
 | `static void AddListener<T>(Action<T> action)` | Typed callback | `void` | Registers a global listener. |
@@ -92,7 +109,7 @@ The following tables cover every public method in the Runtime public classes. In
 
 ### PoolManager
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
 | `void Preload(GameObject prefab, int count)` | Prefab, count | `void` | Warms a GameObject pool. |
 | `GameObject Get(GameObject prefab)` | Prefab | `GameObject` | Gets an active instance. |
@@ -110,7 +127,7 @@ The following tables cover every public method in the Runtime public classes. In
 
 ### CSPool&lt;T&gt; (internal)
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
 | `T Get()` | None | `T` | Borrows an object from a pure C# pool. |
 | `bool Release(T obj)` | Object | `bool` | Returns an object and reports success. |
@@ -119,15 +136,19 @@ The following tables cover every public method in the Runtime public classes. In
 
 ### ReferenceEqualityComparer&lt;T&gt; (internal)
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
 | `bool Equals(T x, T y)` | Two objects | `bool` | Compares objects by reference. |
 | `int GetHashCode(T obj)` | Object | `int` | Gets a reference-based hash code. |
 
 ### TimerManager
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
+| `event Action OnRealSecondChanged` | None | None | Raised when unscaled time crosses an integer second. |
+| `event Action OnRealMinuteChanged` | None | None | Raised when unscaled time crosses an integer minute. |
+| `event Action OnSecondChanged` | None | None | Raised when scaled time crosses an integer second. |
+| `event Action OnMinuteChanged` | None | None | Raised when scaled time crosses an integer minute. |
 | `TimerHandle AddTimer(float delay, Action callback, bool useUnscaledTime = false, string timerTag = "_Default_")` | Delay, callback, unscaled-time flag, tag | `TimerHandle` | Creates a one-shot timer. |
 | `TimerHandle AddLoopTimer(float delay, float interval, Action callback, bool useUnscaledTime = false, string timerTag = "_Default_")` | Initial delay, interval, callback, time mode, tag | `TimerHandle` | Creates a looping timer. |
 | `void RemoveAllTimers()` | None | `void` | Removes all active timers. |
@@ -139,15 +160,22 @@ The following tables cover every public method in the Runtime public classes. In
 
 ### TimerHandle
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
+| `bool IsActive { get; }` | None | `bool` | Gets whether the timer remains active. |
+| `float RemainingTime { get; }` | None | `float` | Gets seconds remaining in the current cycle; 0 when invalid. |
+| `string Tag { get; }` | None | `string` | Gets the timer tag. |
+| `float Duration { get; }` | None | `float` | Gets the current cycle duration in seconds; 0 when invalid. |
+| `float Progress { get; }` | None | `float` | Gets current cycle progress from 0 to 1. |
+| `bool IsPaused { get; }` | None | `bool` | Gets whether the timer is paused. |
+| `bool IsLoop { get; }` | None | `bool` | Gets whether the timer repeats. |
 | `void Remove()` | None | `void` | Removes this timer. |
 | `void Pause()` | None | `void` | Pauses this timer. |
 | `void Resume()` | None | `void` | Resumes this timer. |
 
 ### UIManager
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
 | `T ShowView<T>() where T : UIView` | None | `T` | Shows the registered view of type `T`. |
 | `T ShowViewOnly<T>() where T : UIView` | None | `T` | Shows `T` and hides other views on the same canvas. |
@@ -159,15 +187,18 @@ The following tables cover every public method in the Runtime public classes. In
 
 ### UICanvas / UIView
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
+| `bool UIView.IsRegistered { get; }` | None | `bool` | Gets whether the view is registered with UIManager. |
+| `bool UIView.IsActiveSelf { get; }` | None | `bool` | Gets the view object's own active state, ignoring parents. |
+| `bool UIView.IsVisible { get; }` | None | `bool` | Gets whether the view is visible in the active hierarchy. |
 | `void UICanvas.Refresh()` | None | `void` | Recollects and synchronizes views under the canvas. |
 | `void UIView.Show()` | None | `void` | Activates the view itself. |
 | `void UIView.Hide()` | None | `void` | Deactivates the view itself. |
 
 ### JsonHelper / PPrefsHelper
 
-| Signature | Parameters | Returns | Usage |
+| Member Signature | Parameters | Returns | Usage |
 | --- | --- | --- | --- |
 | `static T Read<T>(string key, T defaultValue = default)` | Key, default value | `T` | Reads and deserializes data. |
 | `static void Write<T>(string key, T value)` | Key, value | `void` | Writes to the cache and flushes later. |

@@ -51,18 +51,25 @@
 
 ## 📚 API 参考
 
-以下列表覆盖 Runtime 中公开类的全部 public 方法。属性和事件请直接通过 IntelliSense 查看。
+以下列表覆盖 Runtime 中公开类声明的全部 public 成员（方法、属性和事件）。
 
 ### ManagerSingleton&lt;T&gt;
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
+| `static T Instance { get; }` | 无 | `T` | 获取当前实例；不存在时自动创建持久化实例。 |
+| `static bool HasInstance { get; }` | 无 | `bool` | 检查是否已有可用实例，不会自动创建。 |
 | `static bool TryGetInstance(out T manager)` | `manager`：输出当前实例 | `bool` | 尝试获取实例，不会自动创建。 |
 
 ### AudioManager
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
+| `float MasterVolume { get; set; }` | 无 | `float` | 获取或设置主音量，范围为 0 到 1。 |
+| `bool Muted { get; set; }` | 无 | `bool` | 获取或设置是否静音。 |
+| `float BgmVolume { get; set; }` | 无 | `float` | 获取或设置背景音乐音量，范围为 0 到 1。 |
+| `float SfxVolume { get; set; }` | 无 | `float` | 获取或设置音效音量，范围为 0 到 1。 |
+| `AudioHandle CurrentBgm { get; private set; }` | 无 | `AudioHandle` | 获取当前 BGM 句柄；没有 BGM 时为 `null`。 |
 | `AudioHandle Play(AudioClip clip, bool loop = false, float volume = 1f)` | 音频片段、循环、播放音量倍率 | `AudioHandle` | 以二维音效播放。 |
 | `AudioHandle Play3D(AudioClip clip, Vector3 position, bool loop = false, float volume = 1f)` | 音频片段、世界坐标、循环、音量倍率 | `AudioHandle` | 在指定位置播放三维音效。 |
 | `AudioHandle Play3D(AudioClip clip, Transform target, bool loop = false, float volume = 1f)` | 音频片段、跟随目标、循环、音量倍率 | `AudioHandle` | 播放跟随目标移动的三维音效。 |
@@ -73,8 +80,18 @@
 
 ### AudioHandle
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
+| `float Volume { get; internal set; }` | 无 | `float` | 获取本次播放的音量倍率。外部只能读取。 |
+| `bool Loop { get; internal set; }` | 无 | `bool` | 获取本次播放是否循环。外部只能读取。 |
+| `float Time { get; }` | 无 | `float` | 获取当前播放位置（秒）；失效时为 0。 |
+| `float Duration { get; }` | 无 | `float` | 获取音频总时长（秒）；失效时为 0。 |
+| `bool IsPlaying { get; }` | 无 | `bool` | 获取当前是否正在播放。 |
+| `bool IsPaused { get; internal set; }` | 无 | `bool` | 获取当前是否暂停。外部只能读取。 |
+| `bool IsStopped { get; }` | 无 | `bool` | 获取当前是否已停止。 |
+| `bool IsCompleted { get; }` | 无 | `bool` | 获取是否自然播放完成。 |
+| `event Action<AudioHandle> Completed` | 回调参数为当前句柄 | 无 | 自然播放完成时触发。 |
+| `event Action<AudioHandle> Stopped` | 回调参数为当前句柄 | 无 | 停止时触发，包含自然播放完成。 |
 | `void SetVolume(float volume)` | 目标音量倍率 | `void` | 立即设置本次播放音量。 |
 | `void FadeTo(float targetVolume, float duration)` | 目标倍率、过渡秒数 | `void` | 平滑调整本次播放音量。 |
 | `void Pause()` | 无 | `void` | 暂停本次播放。 |
@@ -85,7 +102,7 @@
 
 ### EventManager
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
 | `static void FireEvent<T>(T eventData)` | 事件数据 | `void` | 触发该类型的所有监听器。 |
 | `static void AddListener<T>(Action<T> action)` | 类型回调 | `void` | 注册全局事件监听器。 |
@@ -93,7 +110,7 @@
 
 ### PoolManager
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
 | `void Preload(GameObject prefab, int count)` | 预制体、数量 | `void` | 预热 GameObject 对象池。 |
 | `GameObject Get(GameObject prefab)` | 预制体 | `GameObject` | 获取一个活动实例。 |
@@ -111,7 +128,7 @@
 
 ### CSPool&lt;T&gt;（内部类型）
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
 | `T Get()` | 无 | `T` | 从纯 C# 对象池借出对象。 |
 | `bool Release(T obj)` | 对象 | `bool` | 归还对象并报告是否成功。 |
@@ -120,15 +137,19 @@
 
 ### ReferenceEqualityComparer&lt;T&gt;（内部类型）
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
 | `bool Equals(T x, T y)` | 两个对象 | `bool` | 按引用判断相等。 |
 | `int GetHashCode(T obj)` | 对象 | `int` | 获取基于对象引用的哈希值。 |
 
 ### TimerManager
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
+| `event Action OnRealSecondChanged` | 无 | 无 | 非缩放时间跨越整数秒时触发。 |
+| `event Action OnRealMinuteChanged` | 无 | 无 | 非缩放时间跨越整数分钟时触发。 |
+| `event Action OnSecondChanged` | 无 | 无 | 受 `Time.timeScale` 影响的时间跨越整数秒时触发。 |
+| `event Action OnMinuteChanged` | 无 | 无 | 受 `Time.timeScale` 影响的时间跨越整数分钟时触发。 |
 | `TimerHandle AddTimer(float delay, Action callback, bool useUnscaledTime = false, string timerTag = "_Default_")` | 延迟、回调、是否不受 timeScale、标签 | `TimerHandle` | 创建一次性计时器。 |
 | `TimerHandle AddLoopTimer(float delay, float interval, Action callback, bool useUnscaledTime = false, string timerTag = "_Default_")` | 首次延迟、间隔、回调、时间模式、标签 | `TimerHandle` | 创建循环计时器。 |
 | `void RemoveAllTimers()` | 无 | `void` | 移除所有活动计时器。 |
@@ -140,15 +161,22 @@
 
 ### TimerHandle
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
+| `bool IsActive { get; }` | 无 | `bool` | 获取计时器是否仍处于活动状态。 |
+| `float RemainingTime { get; }` | 无 | `float` | 获取当前周期剩余时间（秒）；失效时为 0。 |
+| `string Tag { get; }` | 无 | `string` | 获取计时器标签。 |
+| `float Duration { get; }` | 无 | `float` | 获取当前周期总时长（秒）；失效时为 0。 |
+| `float Progress { get; }` | 无 | `float` | 获取当前周期进度，范围为 0 到 1。 |
+| `bool IsPaused { get; }` | 无 | `bool` | 获取计时器是否暂停。 |
+| `bool IsLoop { get; }` | 无 | `bool` | 获取计时器是否循环。 |
 | `void Remove()` | 无 | `void` | 移除此计时器。 |
 | `void Pause()` | 无 | `void` | 暂停此计时器。 |
 | `void Resume()` | 无 | `void` | 恢复此计时器。 |
 
 ### UIManager
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
 | `T ShowView<T>() where T : UIView` | 无 | `T` | 显示指定类型视图。 |
 | `T ShowViewOnly<T>() where T : UIView` | 无 | `T` | 显示视图并隐藏同画布其他视图。 |
@@ -160,15 +188,18 @@
 
 ### UICanvas / UIView
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
+| `bool UIView.IsRegistered { get; }` | 无 | `bool` | 获取视图是否已注册到 UIManager。 |
+| `bool UIView.IsActiveSelf { get; }` | 无 | `bool` | 获取视图自身是否活动，不考虑父级状态。 |
+| `bool UIView.IsVisible { get; }` | 无 | `bool` | 获取视图是否在活动层级中可见。 |
 | `void UICanvas.Refresh()` | 无 | `void` | 重新收集并同步画布下的视图。 |
 | `void UIView.Show()` | 无 | `void` | 激活视图自身。 |
 | `void UIView.Hide()` | 无 | `void` | 停用视图自身。 |
 
 ### JsonHelper / PPrefsHelper
 
-| 方法签名 | 参数 | 返回值 | 用法 |
+| 成员签名 | 参数 | 返回值 | 用法 |
 | --- | --- | --- | --- |
 | `static T Read<T>(string key, T defaultValue = default)` | 键、默认值 | `T` | 读取并反序列化数据。 |
 | `static void Write<T>(string key, T value)` | 键、数据 | `void` | 写入缓存并延迟持久化。 |
