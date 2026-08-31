@@ -38,6 +38,11 @@ namespace RuriKit
         }
 
         /// <summary>
+        ///     供测试隔离 JSON 数据目录；为 <c>null</c> 时使用正式持久化目录。
+        /// </summary>
+        internal static string DataDirectoryPathOverride { get; set; }
+
+        /// <summary>
         ///     读取并反序列化指定键对应的 JSON 数据。
         /// </summary>
         /// <typeparam name="T">要读取的数据类型</typeparam>
@@ -158,8 +163,10 @@ namespace RuriKit
 
                 try
                 {
-                    File.Delete(GetPath(key));
-                    File.Delete(GetLegacyPath(key));
+                    string path = GetPath(key);
+                    string legacyPath = GetLegacyPath(key);
+                    if (File.Exists(path)) File.Delete(path);
+                    if (File.Exists(legacyPath)) File.Delete(legacyPath);
                 }
                 catch (Exception exception)
                 {
@@ -187,11 +194,11 @@ namespace RuriKit
                     _legacyKeys.Clear();
                 }
 
-                if (!Directory.Exists(_dataDirectoryPath)) return;
+                if (!Directory.Exists(DataDirectoryPath)) return;
 
                 try
                 {
-                    Directory.Delete(_dataDirectoryPath, true);
+                    Directory.Delete(DataDirectoryPath, true);
                 }
                 catch (Exception exception)
                 {
@@ -281,7 +288,7 @@ namespace RuriKit
 
                 try
                 {
-                    Directory.CreateDirectory(_dataDirectoryPath);
+                    Directory.CreateDirectory(DataDirectoryPath);
                 }
                 catch (Exception)
                 {
@@ -358,7 +365,7 @@ namespace RuriKit
             }
 
             fileName.Append(FILE_EXTENSION);
-            return Path.Combine(_dataDirectoryPath, fileName.ToString());
+            return Path.Combine(DataDirectoryPath, fileName.ToString());
         }
 
         private static string GetLegacyPath(string key)
@@ -366,7 +373,7 @@ namespace RuriKit
             string safeKey = key.Replace('\\', '_').Replace('/', '_').Replace(':', '_')
                 .Replace('*', '_').Replace('?', '_').Replace('"', '_')
                 .Replace('<', '_').Replace('>', '_').Replace('|', '_');
-            return Path.Combine(_dataDirectoryPath, safeKey + FILE_EXTENSION);
+            return Path.Combine(DataDirectoryPath, safeKey + FILE_EXTENSION);
         }
 
         private static void ScheduleRetry()
@@ -386,5 +393,25 @@ namespace RuriKit
                 throw new ArgumentException("Json 键为空", nameof(key));
             }
         }
+
+        /// <summary>
+        ///     供测试模拟重新加载时清除进程内缓存，不会修改磁盘数据。
+        /// </summary>
+        internal static void ResetCacheForTests()
+        {
+            _flushTimerHandle?.Remove();
+            _flushTimerHandle = null;
+            _fullTimerHandle?.Remove();
+            _fullTimerHandle = null;
+
+            lock (_cacheLock)
+            {
+                _cache.Clear();
+                _dirtyKeys.Clear();
+                _legacyKeys.Clear();
+            }
+        }
+
+        private static string DataDirectoryPath => DataDirectoryPathOverride ?? _dataDirectoryPath;
     }
 }

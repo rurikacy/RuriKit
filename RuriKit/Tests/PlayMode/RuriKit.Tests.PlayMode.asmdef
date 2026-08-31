@@ -1,0 +1,19 @@
+{
+  "name": "RuriKit.Tests.PlayMode",
+  "rootNamespace": "RuriKit.Tests.PlayMode",
+  "references": [
+    "RuriKit"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

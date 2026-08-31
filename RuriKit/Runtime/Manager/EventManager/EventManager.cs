@@ -18,6 +18,14 @@ namespace RuriKit
         }
 
         /// <summary>
+        ///     供测试直接验证子系统注册后的监听器清理。
+        /// </summary>
+        internal static void ResetStaticStateForTests()
+        {
+            ResetStaticState();
+        }
+
+        /// <summary>
         ///     触发指定事件类型下注册的所有监听器；单个监听器抛出的异常会被记录，且不影响其他监听器。
         /// </summary>
         /// <typeparam name="T">事件类型。</typeparam>

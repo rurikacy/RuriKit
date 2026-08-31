@@ -155,5 +155,13 @@ namespace RuriKit
         {
             IsApplicationQuitting = true;
         }
+
+        /// <summary>
+        ///     供测试直接验证子系统注册重置后的运行状态。
+        /// </summary>
+        internal static void ResetStaticStateForTests()
+        {
+            ResetStaticState();
+        }
     }
 }

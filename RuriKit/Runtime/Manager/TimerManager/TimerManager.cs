@@ -72,9 +72,19 @@ namespace RuriKit
 
         private void Update()
         {
-            float dt = Time.deltaTime;
-            float unscaledDt = Time.unscaledDeltaTime;
+            Tick(Time.deltaTime, Time.unscaledDeltaTime);
+        }
 
+        /// <summary>
+        ///     使用指定的缩放与非缩放帧间隔推进计时器；供测试验证边界条件。
+        /// </summary>
+        internal void TickForTests(float deltaTime, float unscaledDeltaTime)
+        {
+            Tick(deltaTime, unscaledDeltaTime);
+        }
+
+        private void Tick(float dt, float unscaledDt)
+        {
             DetectTimeJumps();
 
             _isUpdatingTimers = true;

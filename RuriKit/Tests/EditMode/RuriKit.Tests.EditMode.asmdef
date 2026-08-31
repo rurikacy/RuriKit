@@ -1,0 +1,21 @@
+{
+  "name": "RuriKit.Tests.EditMode",
+  "rootNamespace": "RuriKit.Tests.EditMode",
+  "references": [
+    "RuriKit"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

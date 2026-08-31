@@ -20,6 +20,7 @@ namespace RuriKit
         private static readonly object _cacheLock = new();
         private static readonly object _flushLock = new();
         private static readonly Dictionary<string, string> _cache = new();
+        private static readonly HashSet<string> _testStorageKeys = new();
         private static bool _isDirty;
         private static TimerHandle _flushTimerHandle;
         private static TimerHandle _fullTimerHandle;
@@ -28,6 +29,11 @@ namespace RuriKit
         {
             Application.quitting += Flush;
         }
+
+        /// <summary>
+        ///     供测试隔离 PlayerPrefs 键；为 <c>null</c> 时使用正式键名。
+        /// </summary>
+        internal static string KeyPrefixForTests { get; set; }
 
         /// <summary>
         ///     读取并反序列化指定键对应的数据。
@@ -41,7 +47,8 @@ namespace RuriKit
         {
             ValidateKey(key);
 
-            if (!PlayerPrefs.HasKey(key)) return defaultValue;
+            string storageKey = GetStorageKey(key);
+            if (!PlayerPrefs.HasKey(storageKey)) return defaultValue;
 
             Type type = typeof(T);
 
@@ -49,25 +56,25 @@ namespace RuriKit
             {
                 if (type == typeof(int))
                 {
-                    return (T)(object)PlayerPrefs.GetInt(key);
+                    return (T)(object)PlayerPrefs.GetInt(storageKey);
                 }
 
                 if (type == typeof(float))
                 {
-                    return (T)(object)PlayerPrefs.GetFloat(key);
+                    return (T)(object)PlayerPrefs.GetFloat(storageKey);
                 }
 
                 if (type == typeof(string))
                 {
-                    return (T)(object)PlayerPrefs.GetString(key);
+                    return (T)(object)PlayerPrefs.GetString(storageKey);
                 }
 
                 if (type == typeof(bool))
                 {
-                    return (T)(object)(PlayerPrefs.GetInt(key) != 0);
+                    return (T)(object)(PlayerPrefs.GetInt(storageKey) != 0);
                 }
 
-                string json = PlayerPrefs.GetString(key);
+                string json = PlayerPrefs.GetString(storageKey);
                 if (string.IsNullOrEmpty(json))
                 {
                     return defaultValue;
@@ -104,7 +111,7 @@ namespace RuriKit
                 _isDirty = true;
             }
 
-            CommitToPlayerPrefs(key, value, type, serialized);
+            CommitToPlayerPrefs(GetStorageKey(key), value, type, serialized);
 
             _flushTimerHandle?.Remove();
             _flushTimerHandle = TimerManager.Instance.AddTimer(FLUSH_INTERVAL, OnFlushTimer);
@@ -124,7 +131,7 @@ namespace RuriKit
         public static bool HasKey(string key)
         {
             ValidateKey(key);
-            return PlayerPrefs.HasKey(key);
+            return PlayerPrefs.HasKey(GetStorageKey(key));
         }
 
         /// <summary>
@@ -148,8 +155,10 @@ namespace RuriKit
         public static void DeleteKey(string key)
         {
             ValidateKey(key);
-            bool deleted = PlayerPrefs.HasKey(key);
-            PlayerPrefs.DeleteKey(key);
+            string storageKey = GetStorageKey(key);
+            bool deleted = PlayerPrefs.HasKey(storageKey);
+            PlayerPrefs.DeleteKey(storageKey);
+            _testStorageKeys.Remove(storageKey);
 
             lock (_cacheLock)
             {
@@ -163,7 +172,18 @@ namespace RuriKit
         /// </summary>
         public static void DeleteAll()
         {
-            PlayerPrefs.DeleteAll();
+            if (KeyPrefixForTests == null)
+            {
+                PlayerPrefs.DeleteAll();
+            }
+            else
+            {
+                foreach (string storageKey in _testStorageKeys)
+                {
+                    PlayerPrefs.DeleteKey(storageKey);
+                }
+                _testStorageKeys.Clear();
+            }
 
             lock (_cacheLock)
             {
@@ -252,6 +272,7 @@ namespace RuriKit
 
         private static void CommitToPlayerPrefs<T>(string key, T value, Type type, string serialized)
         {
+            _testStorageKeys.Add(key);
             if (type == typeof(int))
             {
                 PlayerPrefs.SetInt(key, (int)(object)value);
@@ -284,6 +305,28 @@ namespace RuriKit
             if (string.IsNullOrWhiteSpace(key))
             {
                 throw new ArgumentException("PlayerPrefs 键为空", nameof(key));
+            }
+        }
+
+        private static string GetStorageKey(string key)
+        {
+            return KeyPrefixForTests == null ? key : $"{KeyPrefixForTests}:{key}";
+        }
+
+        /// <summary>
+        ///     供测试模拟重新加载时清除进程内缓存，不会修改 PlayerPrefs 数据。
+        /// </summary>
+        internal static void ResetCacheForTests()
+        {
+            _flushTimerHandle?.Remove();
+            _flushTimerHandle = null;
+            _fullTimerHandle?.Remove();
+            _fullTimerHandle = null;
+
+            lock (_cacheLock)
+            {
+                _cache.Clear();
+                _isDirty = false;
             }
         }
     }
