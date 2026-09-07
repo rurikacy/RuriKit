@@ -26,6 +26,8 @@ namespace RuriKit.Tests.PlayMode
             }
 
             _manager = AudioManager.Instance;
+            AudioListener.pause = false;
+            if (!Object.FindObjectOfType<AudioListener>()) _manager.gameObject.AddComponent<AudioListener>();
             _clip = AudioClip.Create("TestClip", 4410, 1, 44100, false);
             yield return null;
         }
@@ -144,6 +146,132 @@ namespace RuriKit.Tests.PlayMode
             _manager.Play(_clip, true);
 
             Assert.That(_manager.GetComponentsInChildren<AudioSource>(true).Length, Is.EqualTo(1));
+        }
+
+        /// <summary>
+        /// 	验证自然结束后回调只触发一次、句柄完成状态保留且音源能够再次复用。
+        /// </summary>
+        [UnityTest]
+        public IEnumerator NaturalEnd_ShouldCompleteAndReuseSource()
+        {
+            AudioHandle handle = _manager.Play(_clip);
+            int completed = 0;
+            int stopped = 0;
+            handle.Completed += _ => completed++;
+            handle.Stopped += _ => stopped++;
+            Assert.That(_manager.AliveHandleCount, Is.EqualTo(1));
+            yield return new WaitForSecondsRealtime(0.3f);
+
+            Assert.That(handle.IsCompleted, Is.True);
+            Assert.That(handle.IsStopped, Is.True);
+            Assert.That(completed, Is.EqualTo(1));
+            Assert.That(stopped, Is.EqualTo(1));
+            Assert.That(_manager.AliveHandleCount, Is.Zero);
+            AudioSource source = _manager.GetComponentInChildren<AudioSource>(true);
+            Assert.That(source.gameObject.activeSelf, Is.False);
+            Assert.That(source.clip, Is.Null);
+            AudioHandle next = _manager.Play(_clip, true);
+            Assert.That(_manager.GetComponentsInChildren<AudioSource>(true).Length, Is.EqualTo(1));
+            handle.Stop();
+            Assert.That(next.IsStopped, Is.False);
+        }
+
+        /// <summary>
+        /// 	验证短音效在两次管理器更新之间完整播完且时间归零时仍能回收。
+        /// </summary>
+        [UnityTest]
+        public IEnumerator NaturalEnd_BetweenUpdates_ShouldRecycleZeroTimeSource()
+        {
+            _manager.enabled = false;
+            AudioHandle handle = _manager.Play(_clip);
+            yield return new WaitForSecondsRealtime(0.3f);
+            Assert.That(handle._source.isPlaying, Is.False);
+            Assert.That(handle._source.time, Is.Zero);
+            _manager.enabled = true;
+            yield return null;
+            yield return null;
+            Assert.That(handle.IsCompleted, Is.True);
+            Assert.That(_manager.AliveHandleCount, Is.Zero);
+        }
+
+        /// <summary>
+        /// 	验证句柄暂停、全局监听器暂停和应用挂起都不会被误判为自然结束。
+        /// </summary>
+        [UnityTest]
+        public IEnumerator PausedAudio_ShouldStayAliveUntilResumed()
+        {
+            AudioHandle handle = _manager.Play(_clip);
+            handle.Pause();
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.That(_manager.AliveHandleCount, Is.EqualTo(1));
+            Assert.That(handle.IsCompleted, Is.False);
+            AudioListener.pause = true;
+            handle.Resume();
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.That(handle.IsStopped, Is.False);
+            _manager.SendMessage("OnApplicationPause", true);
+            AudioListener.pause = false;
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.That(handle.IsStopped, Is.False);
+            _manager.SendMessage("OnApplicationPause", false);
+            yield return new WaitForSecondsRealtime(0.3f);
+            Assert.That(handle.IsCompleted, Is.True);
+        }
+
+        /// <summary>
+        /// 	验证重复播放短音效后存活数量归零，音源数量不会随播放轮数增长。
+        /// </summary>
+        [UnityTest]
+        public IEnumerator RepeatedOneShots_ShouldKeepSourceCountBounded()
+        {
+            for (int round = 0; round < 10; round++)
+            {
+                for (int i = 0; i < 12; i++) _manager.Play(_clip);
+                yield return new WaitForSecondsRealtime(0.3f);
+                Assert.That(_manager.AliveHandleCount, Is.Zero, $"第 {round} 轮未回收");
+                Assert.That(_manager.GetComponentsInChildren<AudioSource>(true).Length, Is.EqualTo(12));
+            }
+        }
+
+        /// <summary>
+        /// 	验证回调中新建但尚未加入活动列表的句柄也会纳入存活计数。
+        /// </summary>
+        [UnityTest]
+        public IEnumerator CompletedCallback_ShouldCountPendingHandleAndPreserveIt()
+        {
+            AudioHandle next = null;
+            int countInCallback = -1;
+            AudioHandle first = _manager.Play(_clip);
+            first.Completed += _ =>
+            {
+                next = _manager.Play(_clip, true);
+                countInCallback = _manager.AliveHandleCount;
+            };
+            yield return new WaitForSecondsRealtime(0.3f);
+            Assert.That(countInCallback, Is.EqualTo(1));
+            Assert.That(_manager.AliveHandleCount, Is.EqualTo(1));
+            Assert.That(next.IsStopped, Is.False);
+            _manager.StopAll();
+            Assert.That(_manager.AliveHandleCount, Is.Zero);
+        }
+
+        /// <summary>
+        /// 	验证三维音源随目标销毁时会释放句柄引用和滤镜记录。
+        /// </summary>
+        [UnityTest]
+        public IEnumerator DestroyedAudioTarget_ShouldReleaseHandleAndFilterRecord()
+        {
+            GameObject target = new("AudioTarget");
+            AudioHandle handle = _manager.Play3D(_clip, target.transform, true);
+            Object.Destroy(target);
+            yield return null;
+            yield return null;
+            Assert.That(handle._manager, Is.Null);
+            Assert.That(_manager.AliveHandleCount, Is.Zero);
+            var filters = (IDictionary)typeof(AudioManager)
+                .GetField("_gainFilters", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .GetValue(_manager);
+            Assert.That(filters.Count, Is.Zero);
         }
 
         /// <summary>

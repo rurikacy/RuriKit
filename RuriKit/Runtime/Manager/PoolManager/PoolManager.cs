@@ -89,7 +89,7 @@ namespace RuriKit
             }
 
             ObjectPool<GameObject> pool = GetOrCreateGOPool(prefab, DEFAULT_GO_CAPACITY);
-            GameObject instance = pool.Get();
+            GameObject instance = GetLiveInstance(pool);
             Transform t = instance.transform;
             t.SetParent(parent);
             t.SetPositionAndRotation(position, rotation);
@@ -384,10 +384,12 @@ namespace RuriKit
                     int instanceId = go.GetInstanceID();
                     _goInstances[instanceId] = go;
                     _instanceToPrefab[instanceId] = prefabId;
+                    go.AddComponent<PoolInstanceTracker>().Initialize(this, instanceId);
                     return go;
                 },
                 go =>
                 {
+                    if (!go) return;
                     int instanceId = go.GetInstanceID();
                     _goInstances[instanceId] = go;
                     _instanceToPrefab[instanceId] = prefabId;
@@ -417,7 +419,7 @@ namespace RuriKit
 
         private GameObject GetPooledInstance(ObjectPool<GameObject> pool)
         {
-            GameObject instance = pool.Get();
+            GameObject instance = GetLiveInstance(pool);
             int instanceId = instance.GetInstanceID();
             Transform t = instance.transform;
             if (_instanceToPrefab.TryGetValue(instanceId, out int prefabId) &&
@@ -429,6 +431,33 @@ namespace RuriKit
             }
             ActivateBorrowedInstance(instance);
             return instance;
+        }
+
+        /// <summary>
+        /// 	跳过被外部销毁的空闲实例，确保借用时返回有效对象。
+        /// </summary>
+        /// <param name="pool">目标对象池。</param>
+        /// <returns>仍然存活的实例。</returns>
+        private static GameObject GetLiveInstance(ObjectPool<GameObject> pool)
+        {
+            GameObject instance;
+            do
+            {
+                instance = pool.Get();
+            } while (!instance);
+            return instance;
+        }
+
+        /// <summary>
+        /// 	实例被外部销毁或随场景卸载时清除借出记录和延迟归还任务。
+        /// </summary>
+        /// <param name="instanceId">被销毁实例的编号。</param>
+        internal void NotifyInstanceDestroyed(int instanceId)
+        {
+            CancelDelayedRelease(instanceId);
+            _goInstances.Remove(instanceId);
+            _instanceToPrefab.Remove(instanceId);
+            _goBorrowedInstances.Remove(instanceId);
         }
 
         private void ActivateBorrowedInstance(GameObject instance)

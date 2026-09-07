@@ -18,6 +18,23 @@ namespace RuriKit
         private readonly List<TimerHandle> _activeTimers = new(64);
         private readonly List<TimerHandle> _pendingTimers = new(16);
         private bool _isUpdatingTimers;
+        private bool _isDestroyed;
+
+        /// <summary>
+        /// 	获取当前存活的计时器数量，包括暂停和待加入的计时器；仅在主线程读取。
+        /// </summary>
+        public int AliveHandleCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (TimerHandle timer in _activeTimers)
+                    if (CanControl(timer)) count++;
+                foreach (TimerHandle timer in _pendingTimers)
+                    if (CanControl(timer)) count++;
+                return count;
+            }
+        }
 
         private int _lastRealMinute = -1;
         private int _lastRealSecond = -1;
@@ -51,6 +68,7 @@ namespace RuriKit
 
         protected override void OnSingletonDestroy()
         {
+            _isDestroyed = true;
             for (int i = _activeTimers.Count - 1; i >= 0; i--)
             {
                 _activeTimers[i].Reset();
@@ -85,12 +103,12 @@ namespace RuriKit
 
         private void Tick(float dt, float unscaledDt)
         {
-            DetectTimeJumps();
-
+            if (_isDestroyed || _isUpdatingTimers) return;
             _isUpdatingTimers = true;
             try
             {
-                for (int i = _activeTimers.Count - 1; i >= 0; i--)
+                DetectTimeJumps();
+                for (int i = _activeTimers.Count - 1; i >= 0 && !_isDestroyed; i--)
                 {
                     TickTimer(_activeTimers[i], dt, unscaledDt);
                 }
@@ -113,6 +131,7 @@ namespace RuriKit
         /// <exception cref="ArgumentNullException"><paramref name="callback" /> 为 <c>null</c>。</exception>
         public TimerHandle AddTimer(float delay, Action callback, bool useUnscaledTime = false, string timerTag = DEFAULT_TAG)
         {
+            ValidateDuration(delay, nameof(delay));
             if (callback == null)
             {
                 throw new ArgumentNullException(nameof(callback));
@@ -140,6 +159,8 @@ namespace RuriKit
         /// <exception cref="ArgumentNullException"><paramref name="callback" /> 为 <c>null</c>。</exception>
         public TimerHandle AddLoopTimer(float delay, float interval, Action callback, bool useUnscaledTime = false, string timerTag = DEFAULT_TAG)
         {
+            ValidateDuration(delay, nameof(delay));
+            ValidateDuration(interval, nameof(interval));
             if (callback == null)
             {
                 throw new ArgumentNullException(nameof(callback));
@@ -429,10 +450,33 @@ namespace RuriKit
         {
             if (callback == null) return;
 
+            Delegate[] listeners = callback.GetInvocationList();
             for (int i = 0; i < count; i++)
             {
-                callback.Invoke();
+                foreach (Delegate listener in listeners)
+                {
+                    try
+                    {
+                        ((Action)listener)();
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
+                    }
+                }
             }
+        }
+
+        /// <summary>
+        /// 	拒绝非有限时长，避免生成永不结束或每帧异常触发的计时器。
+        /// </summary>
+        /// <param name="duration">需要校验的时长。</param>
+        /// <param name="parameterName">调用方参数名称。</param>
+        /// <exception cref="ArgumentOutOfRangeException">时长为 NaN 或无穷大。</exception>
+        private static void ValidateDuration(float duration, string parameterName)
+        {
+            if (float.IsNaN(duration) || float.IsInfinity(duration))
+                throw new ArgumentOutOfRangeException(parameterName, "计时器时长必须是有限数值。");
         }
 
         private static string NormalizeTag(string timerTag)

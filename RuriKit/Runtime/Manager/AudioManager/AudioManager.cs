@@ -35,6 +35,8 @@ namespace RuriKit
         private AudioMixerGroup _bgmGroup;
         private float _bgmVolume = 1f;
         private int _handleIterationDepth;
+        private bool _applicationPaused;
+        private int _resumeFrame = -1;
         private AudioMixerGroup _masterGroup;
         private float _masterVolume = 1f;
         private bool _muted;
@@ -118,6 +120,32 @@ namespace RuriKit
         /// </summary>
         public AudioHandle CurrentBgm { get; private set; }
 
+        /// <summary>
+        /// 	获取当前存活的播放句柄数量，包括暂停、加载中和待加入的句柄，不包括池中空闲音源；仅在主线程读取。
+        /// </summary>
+        public int AliveHandleCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (AudioHandle handle in _activeHandles)
+                    if (CanControl(handle)) count++;
+                foreach (AudioHandle handle in _pendingHandles)
+                    if (CanControl(handle)) count++;
+                return count;
+            }
+        }
+
+        /// <summary>
+        /// 	记录应用挂起状态，恢复当帧不把尚未恢复的音源判定为自然结束。
+        /// </summary>
+        /// <param name="paused">应用是否已挂起。</param>
+        private void OnApplicationPause(bool paused)
+        {
+            _applicationPaused = paused;
+            if (!paused) _resumeFrame = Time.frameCount;
+        }
+
         protected override void OnSingletonAwake()
         {
             Initialize();
@@ -136,11 +164,31 @@ namespace RuriKit
                 for (int i = _activeHandles.Count - 1; i >= 0; i--)
                 {
                     AudioHandle handle = _activeHandles[i];
+                    if (handle != null && handle._manager == this && !handle._source)
+                    {
+                        StopFadeCoroutine(handle);
+                        ReleaseHandle(handle);
+                        continue;
+                    }
                     if (!CanControl(handle)) continue;
 
                     bool isPausedByListener = AudioListener.pause && !handle._source.ignoreListenerPause;
-                    if (!handle.Loop && !handle.IsPaused && !isPausedByListener &&
-                        !handle._source.isPlaying && handle._source.time > 0f)
+                    if (_applicationPaused || _resumeFrame == Time.frameCount || handle.IsPaused || isPausedByListener)
+                        continue;
+                    AudioClip clip = handle._source.clip;
+                    if (!clip || clip.loadState == AudioDataLoadState.Failed)
+                    {
+                        StopHandle(handle);
+                        continue;
+                    }
+                    if (clip.loadState != AudioDataLoadState.Loaded) continue;
+                    if (!handle._playRequested)
+                    {
+                        StartLoadedHandle(handle);
+                        continue;
+                    }
+                    // 已提交播放且跨过提交帧后，只检查播放状态；自然结束的 time 可以归零。
+                    if (!handle.Loop && handle._playRequestFrame != Time.frameCount && !handle._source.isPlaying)
                     {
                         CompleteHandle(handle);
                     }
@@ -350,8 +398,9 @@ namespace RuriKit
         {
             if (!CanControl(handle) || !handle.IsPaused) return;
 
-            handle._source.UnPause();
+            if (handle._playRequested) handle._source.UnPause();
             handle.IsPaused = false;
+            handle._playRequestFrame = Time.frameCount;
         }
 
         internal void StopHandle(AudioHandle handle)
@@ -405,6 +454,13 @@ namespace RuriKit
                 return null;
             }
 
+            if (clip.loadState == AudioDataLoadState.Failed ||
+                (clip.loadState == AudioDataLoadState.Unloaded && !clip.LoadAudioData()))
+            {
+                Debug.LogWarning($"音频数据加载失败：{clip.name}。", this);
+                return null;
+            }
+
             AudioSource source = GetSource();
             source.clip = clip;
             source.loop = loop;
@@ -433,9 +489,20 @@ namespace RuriKit
             handle.Initialize(source, this, loop, NormalizeVolumeGain(volume), isBgm);
             ApplySourceVolume(handle);
 
-            source.Play();
             AddManagedHandle(handle);
+            if (clip.loadState == AudioDataLoadState.Loaded) StartLoadedHandle(handle);
             return handle;
+        }
+
+        /// <summary>
+        /// 	在音频数据就绪后提交一次播放，并跳过提交当帧的结束检测，避免将加载等待误判为完成。
+        /// </summary>
+        /// <param name="handle">已加载且尚未提交播放的句柄。</param>
+        private void StartLoadedHandle(AudioHandle handle)
+        {
+            handle._source.Play();
+            handle._playRequested = true;
+            handle._playRequestFrame = Time.frameCount;
         }
 
         private void AddManagedHandle(AudioHandle handle)
@@ -452,10 +519,15 @@ namespace RuriKit
 
         private AudioSource GetSource()
         {
-            AudioSource source;
-            if (_sourcePool.Count > 0)
+            AudioSource source = null;
+            while (_sourcePool.Count > 0)
             {
                 source = _sourcePool.Pop();
+                if (source) break;
+                ReturnSource(source);
+            }
+            if (source)
+            {
                 source.gameObject.SetActive(true);
             }
             else
@@ -487,7 +559,13 @@ namespace RuriKit
 
         private void ReturnSource(AudioSource source)
         {
-            if (!source) return;
+            if (ReferenceEquals(source, null)) return;
+            if (!source)
+            {
+                if (_gainFilters.Remove(source, out AudioGainFilter orphanFilter) && orphanFilter)
+                    Destroy(orphanFilter.gameObject);
+                return;
+            }
 
             source.Stop();
             source.clip = null;
@@ -579,10 +657,7 @@ namespace RuriKit
             AudioSource source = handle._source;
             handle.Reset();
 
-            if (source)
-            {
-                ReturnSource(source);
-            }
+            ReturnSource(source);
 
             if (!IsIteratingHandles)
             {

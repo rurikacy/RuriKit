@@ -235,6 +235,54 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
+        /// 	验证借出对象被外部销毁时清除映射、借出记录及延迟归还协程。
+        /// </summary>
+        [UnityTest]
+        public IEnumerator ExternallyDestroyedBorrowedObjects_ShouldClearTracking()
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                GameObject instance = _manager.Get(_prefab);
+                _manager.Release(instance, 60f);
+                Object.Destroy(instance);
+            }
+            yield return null;
+            foreach (string field in new[] { "_goInstances", "_instanceToPrefab", "_delayedReleases" })
+            {
+                var entries = (IDictionary)typeof(PoolManager)
+                    .GetField(field, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .GetValue(_manager);
+                Assert.That(entries.Count, Is.Zero, field);
+            }
+            var borrowed = (System.Collections.Generic.HashSet<int>)typeof(PoolManager)
+                .GetField("_goBorrowedInstances", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .GetValue(_manager);
+            Assert.That(borrowed.Count, Is.Zero);
+        }
+
+        /// <summary>
+        /// 	验证空闲对象被外部销毁后两种借用入口均能跳过失效对象。
+        /// </summary>
+        [UnityTest]
+        public IEnumerator ExternallyDestroyedIdleObjects_ShouldNotBreakGet()
+        {
+            GameObject first = _manager.Get(_prefab);
+            _manager.Release(first);
+            Object.Destroy(first);
+            yield return null;
+            GameObject second = _manager.Get(_prefab);
+            Assert.That(second != null, Is.True);
+            _manager.Release(second);
+            Object.Destroy(second);
+            yield return null;
+            GameObject third = _manager.Get(_prefab, Vector3.one, Quaternion.identity);
+            Assert.That(third != null, Is.True);
+            Assert.That(third.transform.position, Is.EqualTo(Vector3.one));
+            _manager.Release(third);
+            _manager.ClearAllUnused();
+        }
+
+        /// <summary>
         ///     验证管理器销毁会销毁仍借出的 GameObject 实例。
         /// </summary>
         [UnityTest]

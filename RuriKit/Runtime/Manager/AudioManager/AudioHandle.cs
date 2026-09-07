@@ -16,6 +16,8 @@ namespace RuriKit
         internal bool _isBgm;
         internal AudioManager _manager;
         internal AudioSource _source;
+        internal bool _playRequested;
+        internal int _playRequestFrame;
 
         /// <summary>
         ///     获取当前播放的音量倍率；句柄失效后返回 1。
@@ -143,6 +145,8 @@ namespace RuriKit
             _isStopped = false;
             _isCompleted = false;
             _fadeCoroutine = null;
+            _playRequested = false;
+            _playRequestFrame = -1;
         }
 
         internal void MarkStopped(bool completed)
@@ -172,9 +176,10 @@ namespace RuriKit
             _isBgm = false;
             IsPaused = false;
             _isStopped = true;
-            _isCompleted = false;
             Completed = null;
             Stopped = null;
+            _playRequested = false;
+            _playRequestFrame = -1;
         }
     }
 }

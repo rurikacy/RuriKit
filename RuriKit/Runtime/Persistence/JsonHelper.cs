@@ -101,11 +101,11 @@ namespace RuriKit
             }
 
             _flushTimerHandle?.Remove();
-            _flushTimerHandle = TimerManager.Instance.AddTimer(FLUSH_INTERVAL, OnFlushTimer);
+            _flushTimerHandle = TimerManager.Instance.AddTimer(FLUSH_INTERVAL, OnFlushTimer, true);
 
             if (_fullTimerHandle is not { IsActive: true })
             {
-                _fullTimerHandle = TimerManager.Instance.AddTimer(FULL_INTERVAL, OnFullTimer);
+                _fullTimerHandle = TimerManager.Instance.AddTimer(FULL_INTERVAL, OnFullTimer, true);
             }
         }
 
@@ -383,7 +383,7 @@ namespace RuriKit
             TimerManager manager = TimerManager.Instance;
             if (!manager) return;
 
-            _flushTimerHandle = manager.AddTimer(FULL_INTERVAL, OnFlushTimer);
+            _flushTimerHandle = manager.AddTimer(FULL_INTERVAL, OnFlushTimer, true);
         }
 
         private static void ValidateKey(string key)

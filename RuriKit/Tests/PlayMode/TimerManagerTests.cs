@@ -236,6 +236,89 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
+        /// 	验证非有限延迟或间隔不会留下无法回收的计时器。
+        /// </summary>
+        [TestCase(float.NaN)]
+        [TestCase(float.PositiveInfinity)]
+        [TestCase(float.NegativeInfinity)]
+        public void NonFiniteDuration_ShouldRejectWithoutCreatingHandles(float duration)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => _manager.AddTimer(duration, () => { }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _manager.AddLoopTimer(duration, 1f, () => { }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _manager.AddLoopTimer(1f, duration, () => { }));
+            Assert.That(_manager.AliveHandleCount, Is.Zero);
+        }
+
+        /// <summary>
+        /// 	验证秒事件异常不影响其他订阅者和普通计时器，事件中新建任务延后到下次推进。
+        /// </summary>
+        [Test]
+        public void ClockSubscriberFailure_ShouldNotBlockTimersOrOtherSubscribers()
+        {
+            int clockCalls = 0;
+            int timerCalls = 0;
+            int deferredCalls = 0;
+            _manager.OnRealSecondChanged += () => throw new InvalidOperationException("clock failure");
+            _manager.OnRealSecondChanged += () =>
+            {
+                clockCalls++;
+                _manager.AddTimer(0f, () => deferredCalls++);
+            };
+            typeof(TimerManager).GetField("_lastRealSecond",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .SetValue(_manager, Mathf.FloorToInt(Time.unscaledTime) - 1);
+            _manager.AddTimer(0f, () => timerCalls++);
+            LogAssert.Expect(LogType.Exception, "InvalidOperationException: clock failure");
+            _manager.TickForTests(0f, 0f);
+            Assert.That(clockCalls, Is.EqualTo(1));
+            Assert.That(timerCalls, Is.EqualTo(1));
+            Assert.That(deferredCalls, Is.Zero);
+            Assert.That(_manager.AliveHandleCount, Is.EqualTo(1));
+            _manager.TickForTests(0f, 0f);
+            Assert.That(deferredCalls, Is.EqualTo(1));
+            Assert.That(_manager.AliveHandleCount, Is.Zero);
+        }
+
+        /// <summary>
+        /// 	验证大量一次性任务自然完成及回调内批量移除后没有活动或待加入任务残留。
+        /// </summary>
+        [Test]
+        public void RepeatedTimersAndReentrantRemoval_ShouldLeaveNoHandles()
+        {
+            int calls = 0;
+            for (int round = 0; round < 100; round++)
+            {
+                for (int i = 0; i < 100; i++) _manager.AddTimer(0f, () => calls++);
+                _manager.TickForTests(0f, 0f);
+                Assert.That(_manager.AliveHandleCount, Is.Zero);
+            }
+            Assert.That(calls, Is.EqualTo(10000));
+            _manager.AddTimer(0f, () =>
+            {
+                _manager.AddTimer(0f, () => calls++);
+                _manager.RemoveAllTimers();
+                Assert.That(_manager.AliveHandleCount, Is.Zero);
+            });
+            _manager.TickForTests(0f, 0f);
+            _manager.TickForTests(0f, 0f);
+            Assert.That(calls, Is.EqualTo(10000));
+        }
+
+        /// <summary>
+        /// 	验证计时器回调立即销毁管理器时不会继续索引已清空的任务列表。
+        /// </summary>
+        [Test]
+        public void DestroyInsideCallback_ShouldStopTraversal()
+        {
+            int calls = 0;
+            _manager.AddTimer(0f, () => calls++);
+            _manager.AddTimer(0f, () => Object.DestroyImmediate(_manager.gameObject));
+            Assert.DoesNotThrow(() => _manager.TickForTests(0f, 0f));
+            Assert.That(calls, Is.Zero);
+            _manager = null;
+        }
+
+        /// <summary>
         ///     验证管理器销毁时会使未完成计时器失效。
         /// </summary>
         [UnityTest]

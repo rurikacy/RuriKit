@@ -114,11 +114,11 @@ namespace RuriKit
             CommitToPlayerPrefs(GetStorageKey(key), value, type, serialized);
 
             _flushTimerHandle?.Remove();
-            _flushTimerHandle = TimerManager.Instance.AddTimer(FLUSH_INTERVAL, OnFlushTimer);
+            _flushTimerHandle = TimerManager.Instance.AddTimer(FLUSH_INTERVAL, OnFlushTimer, true);
 
             if (_fullTimerHandle is not { IsActive: true })
             {
-                _fullTimerHandle = TimerManager.Instance.AddTimer(FULL_INTERVAL, OnFullTimer);
+                _fullTimerHandle = TimerManager.Instance.AddTimer(FULL_INTERVAL, OnFullTimer, true);
             }
         }
 
@@ -165,6 +165,8 @@ namespace RuriKit
                 _cache.Remove(key);
                 _isDirty |= deleted;
             }
+            if (deleted && _flushTimerHandle is not { IsActive: true })
+                _flushTimerHandle = TimerManager.Instance.AddTimer(FLUSH_INTERVAL, OnFlushTimer, true);
         }
 
         /// <summary>
@@ -195,6 +197,7 @@ namespace RuriKit
             _flushTimerHandle = null;
             _fullTimerHandle?.Remove();
             _fullTimerHandle = null;
+            PlayerPrefs.Save();
         }
 
         /// <summary>
@@ -272,7 +275,7 @@ namespace RuriKit
 
         private static void CommitToPlayerPrefs<T>(string key, T value, Type type, string serialized)
         {
-            _testStorageKeys.Add(key);
+            if (KeyPrefixForTests != null) _testStorageKeys.Add(key);
             if (type == typeof(int))
             {
                 PlayerPrefs.SetInt(key, (int)(object)value);
