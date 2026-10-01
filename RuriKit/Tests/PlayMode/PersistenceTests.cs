@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using NUnit.Framework;
@@ -184,7 +185,7 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证后台时间缩放为零时，JSON 和 PlayerPrefs 的延迟保存仍能完成。
+        ///     验证后台时间缩放为零时，JSON 和 PlayerPrefs 的延迟保存仍能完成。
         /// </summary>
         [UnityTest]
         public IEnumerator PausedGame_ShouldStillFlushPersistence()
@@ -194,7 +195,7 @@ namespace RuriKit.Tests.PlayMode
             PPrefsHelper.Write("paused", 42);
             yield return new WaitForSecondsRealtime(0.8f);
             Assert.That(File.Exists(Path.Combine(_jsonDirectory, HashKey("paused") + ".json")), Is.True);
-            var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
+            var flags = BindingFlags.Static | BindingFlags.NonPublic;
             Assert.That(typeof(PPrefsHelper).GetField("_isDirty", flags).GetValue(null), Is.False);
             PPrefsHelper.DeleteKey("paused");
             Assert.That(typeof(PPrefsHelper).GetField("_isDirty", flags).GetValue(null), Is.True);

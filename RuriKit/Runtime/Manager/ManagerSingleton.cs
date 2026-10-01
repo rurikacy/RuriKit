@@ -142,6 +142,7 @@ namespace RuriKit
     internal static class ManagerSingletonRuntime
     {
         internal static int Generation { get; private set; }
+
         internal static bool IsApplicationQuitting { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

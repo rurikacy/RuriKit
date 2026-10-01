@@ -434,7 +434,7 @@ namespace RuriKit
         }
 
         /// <summary>
-        /// 	跳过被外部销毁的空闲实例，确保借用时返回有效对象。
+        ///     跳过被外部销毁的空闲实例，确保借用时返回有效对象。
         /// </summary>
         /// <param name="pool">目标对象池。</param>
         /// <returns>仍然存活的实例。</returns>
@@ -449,7 +449,7 @@ namespace RuriKit
         }
 
         /// <summary>
-        /// 	实例被外部销毁或随场景卸载时清除借出记录和延迟归还任务。
+        ///     实例被外部销毁或随场景卸载时清除借出记录和延迟归还任务。
         /// </summary>
         /// <param name="instanceId">被销毁实例的编号。</param>
         internal void NotifyInstanceDestroyed(int instanceId)

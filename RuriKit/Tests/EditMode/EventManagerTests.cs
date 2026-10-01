@@ -90,7 +90,9 @@ namespace RuriKit.Tests.EditMode
         public void RemoveListener_WhenListenerDoesNotExist_ShouldBeNoOp()
         {
             EventManager.RemoveListener<int>(null);
-            EventManager.RemoveListener<int>(_ => { });
+            EventManager.RemoveListener<int>(_ =>
+            {
+            });
 
             Assert.DoesNotThrow(() => EventManager.FireEvent(0));
         }

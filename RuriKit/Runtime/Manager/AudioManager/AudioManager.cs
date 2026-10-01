@@ -121,7 +121,7 @@ namespace RuriKit
         public AudioHandle CurrentBgm { get; private set; }
 
         /// <summary>
-        /// 	获取当前存活的播放句柄数量，包括暂停、加载中和待加入的句柄，不包括池中空闲音源；仅在主线程读取。
+        ///     获取当前存活的播放句柄数量，包括暂停、加载中和待加入的句柄，不包括池中空闲音源；仅在主线程读取。
         /// </summary>
         public int AliveHandleCount
         {
@@ -129,15 +129,17 @@ namespace RuriKit
             {
                 int count = 0;
                 foreach (AudioHandle handle in _activeHandles)
-                    if (CanControl(handle)) count++;
+                    if (CanControl(handle))
+                        count++;
                 foreach (AudioHandle handle in _pendingHandles)
-                    if (CanControl(handle)) count++;
+                    if (CanControl(handle))
+                        count++;
                 return count;
             }
         }
 
         /// <summary>
-        /// 	记录应用挂起状态，恢复当帧不把尚未恢复的音源判定为自然结束。
+        ///     记录应用挂起状态，恢复当帧不把尚未恢复的音源判定为自然结束。
         /// </summary>
         /// <param name="paused">应用是否已挂起。</param>
         private void OnApplicationPause(bool paused)
@@ -495,7 +497,7 @@ namespace RuriKit
         }
 
         /// <summary>
-        /// 	在音频数据就绪后提交一次播放，并跳过提交当帧的结束检测，避免将加载等待误判为完成。
+        ///     在音频数据就绪后提交一次播放，并跳过提交当帧的结束检测，避免将加载等待误判为完成。
         /// </summary>
         /// <param name="handle">已加载且尚未提交播放的句柄。</param>
         private void StartLoadedHandle(AudioHandle handle)
@@ -551,7 +553,6 @@ namespace RuriKit
             gainFilter.Gain = 1f;
             source.volume = 1f;
             source.loop = false;
-            source.time = 0f;
             source.spatialBlend = 0f;
             source.playOnAwake = false;
             return source;
@@ -567,6 +568,7 @@ namespace RuriKit
                 return;
             }
 
+            // Stop 已重置播放位置；清空 clip 后设置 time 会触发 Unity 6 警告。
             source.Stop();
             source.clip = null;
             source.loop = false;
@@ -575,7 +577,6 @@ namespace RuriKit
             {
                 gainFilter.Gain = 1f;
             }
-            source.time = 0f;
             source.spatialBlend = 0f;
             source.playOnAwake = false;
             source.outputAudioMixerGroup = null;

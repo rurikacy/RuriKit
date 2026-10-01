@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -149,7 +150,7 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证自然结束后回调只触发一次、句柄完成状态保留且音源能够再次复用。
+        ///     验证自然结束后回调只触发一次、句柄完成状态保留且音源能够再次复用。
         /// </summary>
         [UnityTest]
         public IEnumerator NaturalEnd_ShouldCompleteAndReuseSource()
@@ -177,7 +178,7 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证短音效在两次管理器更新之间完整播完且时间归零时仍能回收。
+        ///     验证短音效在两次管理器更新之间完整播完且时间归零时仍能回收。
         /// </summary>
         [UnityTest]
         public IEnumerator NaturalEnd_BetweenUpdates_ShouldRecycleZeroTimeSource()
@@ -195,7 +196,7 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证句柄暂停、全局监听器暂停和应用挂起都不会被误判为自然结束。
+        ///     验证句柄暂停、全局监听器暂停和应用挂起都不会被误判为自然结束。
         /// </summary>
         [UnityTest]
         public IEnumerator PausedAudio_ShouldStayAliveUntilResumed()
@@ -219,7 +220,7 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证重复播放短音效后存活数量归零，音源数量不会随播放轮数增长。
+        ///     验证重复播放短音效后存活数量归零，音源数量不会随播放轮数增长。
         /// </summary>
         [UnityTest]
         public IEnumerator RepeatedOneShots_ShouldKeepSourceCountBounded()
@@ -234,7 +235,7 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证回调中新建但尚未加入活动列表的句柄也会纳入存活计数。
+        ///     验证回调中新建但尚未加入活动列表的句柄也会纳入存活计数。
         /// </summary>
         [UnityTest]
         public IEnumerator CompletedCallback_ShouldCountPendingHandleAndPreserveIt()
@@ -256,7 +257,7 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证三维音源随目标销毁时会释放句柄引用和滤镜记录。
+        ///     验证三维音源随目标销毁时会释放句柄引用和滤镜记录。
         /// </summary>
         [UnityTest]
         public IEnumerator DestroyedAudioTarget_ShouldReleaseHandleAndFilterRecord()
@@ -269,7 +270,7 @@ namespace RuriKit.Tests.PlayMode
             Assert.That(handle._manager, Is.Null);
             Assert.That(_manager.AliveHandleCount, Is.Zero);
             var filters = (IDictionary)typeof(AudioManager)
-                .GetField("_gainFilters", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .GetField("_gainFilters", BindingFlags.Instance | BindingFlags.NonPublic)
                 .GetValue(_manager);
             Assert.That(filters.Count, Is.Zero);
         }

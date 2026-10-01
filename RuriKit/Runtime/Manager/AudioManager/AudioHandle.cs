@@ -70,6 +70,7 @@ namespace RuriKit
         public event Action<AudioHandle> Stopped;
 
         private bool IsValid => _manager && _source && !_isStopped;
+
         private bool _isCompleted;
         private bool _isStopped = true;
 

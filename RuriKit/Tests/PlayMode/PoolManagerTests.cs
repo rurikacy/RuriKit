@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -235,7 +237,7 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证借出对象被外部销毁时清除映射、借出记录及延迟归还协程。
+        ///     验证借出对象被外部销毁时清除映射、借出记录及延迟归还协程。
         /// </summary>
         [UnityTest]
         public IEnumerator ExternallyDestroyedBorrowedObjects_ShouldClearTracking()
@@ -250,18 +252,18 @@ namespace RuriKit.Tests.PlayMode
             foreach (string field in new[] { "_goInstances", "_instanceToPrefab", "_delayedReleases" })
             {
                 var entries = (IDictionary)typeof(PoolManager)
-                    .GetField(field, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)
                     .GetValue(_manager);
                 Assert.That(entries.Count, Is.Zero, field);
             }
-            var borrowed = (System.Collections.Generic.HashSet<int>)typeof(PoolManager)
-                .GetField("_goBorrowedInstances", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            var borrowed = (HashSet<int>)typeof(PoolManager)
+                .GetField("_goBorrowedInstances", BindingFlags.Instance | BindingFlags.NonPublic)
                 .GetValue(_manager);
             Assert.That(borrowed.Count, Is.Zero);
         }
 
         /// <summary>
-        /// 	验证空闲对象被外部销毁后两种借用入口均能跳过失效对象。
+        ///     验证空闲对象被外部销毁后两种借用入口均能跳过失效对象。
         /// </summary>
         [UnityTest]
         public IEnumerator ExternallyDestroyedIdleObjects_ShouldNotBreakGet()

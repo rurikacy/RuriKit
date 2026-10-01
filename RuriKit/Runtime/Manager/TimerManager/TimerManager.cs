@@ -21,7 +21,7 @@ namespace RuriKit
         private bool _isDestroyed;
 
         /// <summary>
-        /// 	获取当前存活的计时器数量，包括暂停和待加入的计时器；仅在主线程读取。
+        ///     获取当前存活的计时器数量，包括暂停和待加入的计时器；仅在主线程读取。
         /// </summary>
         public int AliveHandleCount
         {
@@ -29,9 +29,11 @@ namespace RuriKit
             {
                 int count = 0;
                 foreach (TimerHandle timer in _activeTimers)
-                    if (CanControl(timer)) count++;
+                    if (CanControl(timer))
+                        count++;
                 foreach (TimerHandle timer in _pendingTimers)
-                    if (CanControl(timer)) count++;
+                    if (CanControl(timer))
+                        count++;
                 return count;
             }
         }
@@ -123,7 +125,7 @@ namespace RuriKit
         /// <summary>
         ///     创建一个在指定延迟后执行一次回调的计时器。
         /// </summary>
-        /// <param name="delay">执行回调前的延迟时间，单位为秒。负数按 0 处理；0 表示在下一次计时器更新时触发。</param>
+        /// <param name="delay">执行回调前的延迟时间，单位为秒。负数按 0 处理；0 表示在下一次计时器更新时触发（即立即触发）。</param>
         /// <param name="callback">计时结束时执行的回调，不能为 <c>null</c>。</param>
         /// <param name="useUnscaledTime">是否使用不受 <see cref="Time.timeScale" /> 影响的时间。</param>
         /// <param name="timerTag">用于批量管理计时器的标签。为 <c>null</c> 时使用默认标签；标签匹配为精确匹配。</param>
@@ -150,7 +152,7 @@ namespace RuriKit
         /// <summary>
         ///     创建一个在首次延迟后执行回调，并按指定间隔重复执行的计时器。
         /// </summary>
-        /// <param name="delay">首次执行回调前的延迟时间，单位为秒。负数按 0 处理；0 表示在下一次计时器更新时触发。</param>
+        /// <param name="delay">首次执行回调前的延迟时间，单位为秒。负数按 0 处理；0 表示在下一次计时器更新时触发（即立即触发）。</param>
         /// <param name="interval">后续两次回调之间的间隔，单位为秒。负数按 0 处理；0 表示每次计时器更新最多触发一次。</param>
         /// <param name="callback">每次计时结束时执行的回调，不能为 <c>null</c>。</param>
         /// <param name="useUnscaledTime">是否使用不受 <see cref="Time.timeScale" /> 影响的时间。</param>
@@ -468,7 +470,7 @@ namespace RuriKit
         }
 
         /// <summary>
-        /// 	拒绝非有限时长，避免生成永不结束或每帧异常触发的计时器。
+        ///     拒绝非有限时长，避免生成永不结束或每帧异常触发的计时器。
         /// </summary>
         /// <param name="duration">需要校验的时长。</param>
         /// <param name="parameterName">调用方参数名称。</param>

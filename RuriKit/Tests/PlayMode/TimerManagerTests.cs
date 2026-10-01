@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -236,21 +237,27 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证非有限延迟或间隔不会留下无法回收的计时器。
+        ///     验证非有限延迟或间隔不会留下无法回收的计时器。
         /// </summary>
         [TestCase(float.NaN)]
         [TestCase(float.PositiveInfinity)]
         [TestCase(float.NegativeInfinity)]
         public void NonFiniteDuration_ShouldRejectWithoutCreatingHandles(float duration)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => _manager.AddTimer(duration, () => { }));
-            Assert.Throws<ArgumentOutOfRangeException>(() => _manager.AddLoopTimer(duration, 1f, () => { }));
-            Assert.Throws<ArgumentOutOfRangeException>(() => _manager.AddLoopTimer(1f, duration, () => { }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _manager.AddTimer(duration, () =>
+            {
+            }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _manager.AddLoopTimer(duration, 1f, () =>
+            {
+            }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _manager.AddLoopTimer(1f, duration, () =>
+            {
+            }));
             Assert.That(_manager.AliveHandleCount, Is.Zero);
         }
 
         /// <summary>
-        /// 	验证秒事件异常不影响其他订阅者和普通计时器，事件中新建任务延后到下次推进。
+        ///     验证秒事件异常不影响其他订阅者和普通计时器，事件中新建任务延后到下次推进。
         /// </summary>
         [Test]
         public void ClockSubscriberFailure_ShouldNotBlockTimersOrOtherSubscribers()
@@ -265,7 +272,7 @@ namespace RuriKit.Tests.PlayMode
                 _manager.AddTimer(0f, () => deferredCalls++);
             };
             typeof(TimerManager).GetField("_lastRealSecond",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    BindingFlags.Instance | BindingFlags.NonPublic)
                 .SetValue(_manager, Mathf.FloorToInt(Time.unscaledTime) - 1);
             _manager.AddTimer(0f, () => timerCalls++);
             LogAssert.Expect(LogType.Exception, "InvalidOperationException: clock failure");
@@ -280,7 +287,7 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证大量一次性任务自然完成及回调内批量移除后没有活动或待加入任务残留。
+        ///     验证大量一次性任务自然完成及回调内批量移除后没有活动或待加入任务残留。
         /// </summary>
         [Test]
         public void RepeatedTimersAndReentrantRemoval_ShouldLeaveNoHandles()
@@ -305,7 +312,7 @@ namespace RuriKit.Tests.PlayMode
         }
 
         /// <summary>
-        /// 	验证计时器回调立即销毁管理器时不会继续索引已清空的任务列表。
+        ///     验证计时器回调立即销毁管理器时不会继续索引已清空的任务列表。
         /// </summary>
         [Test]
         public void DestroyInsideCallback_ShouldStopTraversal()
@@ -324,7 +331,9 @@ namespace RuriKit.Tests.PlayMode
         [UnityTest]
         public IEnumerator OnDestroy_WhenTimersRemain_ShouldInvalidateTheirHandles()
         {
-            TimerHandle timer = _manager.AddTimer(5f, () => { });
+            TimerHandle timer = _manager.AddTimer(5f, () =>
+            {
+            });
             Object.Destroy(_manager.gameObject);
             yield return null;
 
